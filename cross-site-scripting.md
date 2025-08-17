@@ -31,10 +31,16 @@ Tác động thực tế của một cuộc tấn công XSS thường phụ thu�
 -	Chính sách Bảo mật Nội dung. Là tuyến phòng thủ cuối cùng, bạn có thể sử dụng Chính sách Bảo mật Nội dung (CSP) để giảm mức độ nghiêm trọng của bất kỳ lỗ hổng XSS nào vẫn còn tồn tại.
 B.	THỰC HÀNH
 1.	Reflected XSS:
-1.1	Reflected XSS vào HTML mà không được mã hóa:
+Reflected XSS là dạng tấn công cross-site scripting đơn giản nhất. Nó phát sinh khi một ứng dụng nhận dữ liệu trong một yêu cầu HTTP và đưa dữ liệu đó vào phản hồi tức thời theo cách không an toàn.
+Sau đây là một ví dụ đơn giản về lỗ hổng XSS phản ánh:https://insecure-website.com/status?message=All+is+well.<p>Status: All is well.</p>
+Ứng dụng không thực hiện bất kỳ xử lý dữ liệu nào khác, do đó kẻ tấn công có thể dễ dàng thực hiện một cuộc tấn công như thế này:
+https://insecure-website.com/status?message=<script>/*+Bad+stuff+here...+*/</script>
+<p>Status: <script>/* Bad stuff here... */</script></p>
+Nếu người dùng truy cập URL do kẻ tấn công tạo ra, tập lệnh của kẻ tấn công sẽ được thực thi trên trình duyệt của người dùng, trong bối cảnh phiên làm việc của người dùng với ứng dụng. Tại thời điểm đó, tập lệnh có thể thực hiện bất kỳ hành động nào và truy xuất bất kỳ dữ liệu nào mà người dùng có quyền truy cập.
+1.1	XSS giữa các thẻ HTML
+1.1.1 Reflected XSS vào HTML mà không được mã hóa:
 -	Reflected XSS xảy ra khi dữ liệu người dùng nhập vào (trong URL, form, v.v.) được phản hồi lại trang HTML mà không qua bước mã hóa hoặc lọc.
 -	"HTML context with nothing encoded" nghĩa là dữ liệu được đưa thẳng vào HTML mà không escape các ký tự đặc biệt (<, >, ", '...), nên attacker có thể chèn trực tiếp thẻ <script> hoặc HTML độc hại.
-
 Bước 1: Gõ từ khóa "myiterm" vào thanh tìm kiếm → server trả về kết quả hiển thị "0 search results for 'myiterm'".
 Bước 2: Trong HTML response, giá trị myiterm được chèn thẳng vào bên trong thẻ <h1> và một số phần khác mà không mã hóa.
 <img width="975" height="515" alt="image" src="https://github.com/user-attachments/assets/9a44666e-8b06-4dc5-9661-b586226dfdd6" />
@@ -47,7 +53,10 @@ Server trả về payload nguyên vẹn trong HTML không hề encode → trình
 Một popup alert(1) xuất hiện → chứng minh XSS thành công.
 <img width="975" height="548" alt="image" src="https://github.com/user-attachments/assets/8cb3f2bd-db42-460d-a73c-87b614cb8bac" />
 <img width="975" height="548" alt="image" src="https://github.com/user-attachments/assets/c5502edc-e145-49b8-832d-43d1fc9ce766" />
-1.2	Reflected XSS vào thuộc tính có dấu ngoặc kép được mã hóa HTML:
+1.1.2 Reflected XSS vào HTML với hầu hết các thẻ và thuộc tính bị chặn
+  
+1.2	XSS trong thuộc tính thẻ HTML
+1.2.1 Reflected XSS vào thuộc tính có dấu ngoặc nhọn được mã hóa HTML:
 -	Đây là dạng Reflected XSS nhưng dữ liệu đầu vào được đưa vào giá trị của một thuộc tính HTML (ví dụ: value="", title="", onmouseover=""…).
 -	Dấu ngoặc nhọn < > bị HTML encode → tức là nếu gửi <script>alert(1)</script> thì trang web sẽ hiển thị dưới dạng &lt;script&gt;... → không thực thi được.
 -	Tuy nhiên, phần thuộc tính HTML lại chưa được lọc các ký tự đặc biệt như dấu nháy ", ' hoặc tên sự kiện (event handler) → vẫn có thể chèn JavaScript.
@@ -58,7 +67,8 @@ Một popup alert(1) xuất hiện → chứng minh XSS thành công.
 <img width="802" height="451" alt="image" src="https://github.com/user-attachments/assets/673e4e6b-8482-4ab9-87e2-6a930d8caabd" />
 Trình duyệt hiểu đây là một thẻ <input> có thuộc tính sự kiện onmouseover gán với alert(1). Khi người dùng di chuột vào, JavaScript alert(1)  chạy → popup xuất hiện.
 <img width="813" height="457" alt="image" src="https://github.com/user-attachments/assets/2d3bde8b-8b91-426a-b0ea-5cfa0c8cc89f" />
-1.3 Reflected XSS vào chuỗi JavaScript có dấu ngoặc nhọn được mã hóa HTML
+1.3 XSS vào JavaScript: 
+1.3.2 Reflected XSS vào chuỗi JavaScript có dấu ngoặc nhọn được mã hóa HTML
 - Bối cảnh (Context): Payload người dùng nhập vào được chèn vào bên trong chuỗi JavaScript (string) trong HTML.
 - Dấu ngoặc nhọn < > đã được mã hóa HTML → nghĩa là nếu chèn trực tiếp thẻ <script> sẽ bị vô hiệu (< → &lt;, > → &gt;).
 - Tuy nhiên, ta vẫn có thể thoát ra khỏi chuỗi JavaScript bằng cách đóng chuỗi (dùng dấu ' hoặc ") và thêm mã JavaScript độc hại. 
@@ -67,7 +77,7 @@ Bước 1: Gửi một chuỗi ký tự chữ và số ngẫu nhiên vào hộp 
 Bước 2: Thay thế đầu vào bằng '-alert(1)-' để thoát khỏi chuỗi JavaScript
 <img width="975" height="548" alt="image" src="https://github.com/user-attachments/assets/f66a9167-f7f2-4e80-bfc8-2c7bb576c9f1" />
 <img width="975" height="548" alt="image" src="https://github.com/user-attachments/assets/c35ba8bd-0a7e-434c-8622-4ba869522cc0" />
-1.4 Reflected XSS vào HTML với hầu hết các thẻ và thuộc tính bị chặn
+
   
 
 
