@@ -1,4 +1,4 @@
-<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/40b2c69c-f406-47ab-abac-bbfa95d0e67e" />Tìm hiểu Cross-site scripting (XSS)
+Tìm hiểu Cross-site scripting (XSS)
 A.	LÝ THUYẾT
 1.	Khái niệm và mục đích:
 -	Khái niệm: Cross-site scripting (XSS) là lỗ hổng bảo mật web cho phép kẻ tấn công chèn và thực thi mã độc (thường là JavaScript) vào trình duyệt của người dùng thông qua một ứng dụng web dễ bị tấn công.
@@ -137,6 +137,15 @@ Bước 1: Truy cập URL sau: https://0a0b0017037ae73d813e67ba00e900ce.web-secu
 - Do input được phản ánh vào một thẻ HTML hợp lệ và escape dấu < >, ta chỉ có thể tiêm thuộc tính thay vì mở thẻ mới.
 - Payload tận dụng accesskey + onclick để ép trình duyệt chạy JavaScript khi nạn nhân nhấn tổ hợp phím.
 1.3 XSS vào JavaScript: 
+1.3.1 Reflected XSS vào chuỗi JavaScript với dấu nháy đơn và dấu gạch chéo ngược được thoát
+Lab chứa một lỗ hổng mã hóa chéo trang phản ánh trong chức năng theo dõi truy vấn tìm kiếm. Việc phản ánh xảy ra bên trong một chuỗi JavaScript với dấu ngoặc đơn và dấu gạch chéo ngược được thoát. Thực hiện một cuộc tấn công mã lệnh chéo trang web để thoát khỏi chuỗi JavaScript và gọi alert.
+Bước 1:Tìm kiếm mytien1234, sau đó sử dụng Burp Suite để chặn yêu cầu tìm kiếm và gửi đến Burp Repeater. mytien1234 đã được phản ánh bên trong chuỗi JavaScript. 
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/d7cafb51-d4e6-44f1-bed2-1cf4cb5b366a" />
+Bước 2: thay mytien1234 bằng mytien1234'payload và quan sát dấu nháy đơn được thoát bằng dấu gạch chéo ngược, ngăn thoát khỏi chuỗi.
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/9aa199f2-b5e6-4a02-881e-b4ec2894364a" />
+Bước 3: Thay thế đầu vào bằng </script><script>alert(1)</script>  để thoát khỏi khối tập lệnh và chèn một tập lệnh mới
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/86ea6986-eb08-435a-b048-b00868e562bd" />
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/e6f61fee-3e2c-48d7-bca7-c73a28d1e355" />
 1.3.2 Reflected XSS vào chuỗi JavaScript có dấu ngoặc nhọn được mã hóa HTML
 - Bối cảnh (Context): Payload người dùng nhập vào được chèn vào bên trong chuỗi JavaScript (string) trong HTML.
 - Dấu ngoặc nhọn < > đã được mã hóa HTML → nghĩa là nếu chèn trực tiếp thẻ <script> sẽ bị vô hiệu (< → &lt;, > → &gt;).
@@ -146,6 +155,33 @@ Bước 1: Gửi một chuỗi ký tự chữ và số ngẫu nhiên vào hộp 
 Bước 2: Thay thế đầu vào bằng '-alert(1)-' để thoát khỏi chuỗi JavaScript
 <img width="975" height="548" alt="image" src="https://github.com/user-attachments/assets/f66a9167-f7f2-4e80-bfc8-2c7bb576c9f1" />
 <img width="975" height="548" alt="image" src="https://github.com/user-attachments/assets/c35ba8bd-0a7e-434c-8622-4ba869522cc0" />
+1.3.3 Reflected XSS vào chuỗi JavaScript với dấu ngoặc nhọn và dấu ngoặc kép Mã hóa HTML và thoát dấu ngoặc đơn
+Lab chứa lỗ hổng thực thi mã lệnh chéo trang trong chức năng theo dõi truy vấn tìm kiếm, trong đó dấu ngoặc nhọn và dấu ngoặc kép được mã hóa HTML và dấu ngoặc đơn được thoát. Thực hiện một cuộc tấn công để thoát khỏi chuỗi JavaScript và gọi alert.
+Bước 1:Tìm kiếm mytien1234, sau đó sử dụng Burp Suite để chặn yêu cầu tìm kiếm và gửi đến Burp Repeater. mytien1234 đã được phản ánh bên trong chuỗi JavaScript.
+Bước 2: Thay mytien1234 bằng mytien1234'payload và quan sát dấu nháy đơn được thoát bằng dấu gạch chéo ngược, ngăn thoát khỏi chuỗi.
+Bước 4: Thay bằng mytien1234\payload và quan sát dấu gạch chéo ngược không bị thoát.
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/b58f91ad-f26e-4299-b381-36d0dd1d6a08" />
+Bước 5: Nhập \'-alert(1)// vào ô tìm kiếm để đưa ra cảnh báo 
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/4e8536fb-e755-4832-bdb4-ae4652c11ff9" />
+1.3.4 Reflected XSS trong URL 
+Lab này phản ánh dữ liệu đầu vào trong một URL JavaScript cho thấy ứng dụng đang chặn một số ký tự nhằm ngăn chặn các cuộc tấn công XSS.Thực hiện một cuộc tấn công để gọi alert có chuỗi ký tự 1337 nằm ở đâu đó trong alert.
+Bước 1: Truy cập URL sau: 
+https://0aca00ba03c8b93c80b0626800e300ff.web-security-academy.net/post?postId=5&%27},x=x=%3E{throw/**/onerror=alert,1337},toString=x,window%2b%27%27,{x:%27
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/fbc7d97f-6589-41e5-a6a7-4d2395e61c13" />
+- Lỗ hổng này sử dụng xử lý ngoại lệ để gọi alert với các đối số. throw được sử dụng, phân tách bằng chú thích trống để tránh hạn chế không có khoảng trắng. alert được gán cho trình xử lý ngoại lệ onerror
+- Vì throw là một câu lệnh, nó không thể được sử dụng như một biểu thức. Thay vào đó, chúng ta cần sử dụng các hàm mũi tên để tạo một khối lệnh để throw có thể sử dụng câu lệnh. Sau đó, chúng ta cần gọi hàm này, gán nó cho thuộc toString của window và kích hoạt this bằng cách buộc chuyển đổi chuỗi trên window.
+Kết quả: 
+| Thành phần                           | Mục đích                                                                                                   |
+| ------------------------------------ | ---------------------------------------------------------------------------------------------------------- |
+| `'},`                                | Thoát khỏi chuỗi `'...'`, kết thúc đoạn hiện tại bằng `},` để đóng object/lệnh JavaScript đang được sử dụng. |
+| `x=x=>{throw/**/onerror=alert,1337}` | Tạo function kích hoạt `alert`.                                                                            |
+| `toString=x`                         | Ghi đè `.toString()`. Nếu biến nào bị ép thành chuỗi (qua `+` chẳng hạn), nó sẽ kích hoạt hàm `x()` → và từ đó `throw onerror=alert`. |
+| `window+''`                          | Ép `window` thành chuỗi → kích hoạt `.toString()` → gọi `x()` → chạy `alert(1337)`.                        |
+| `{x:'`                               | Làm hợp lệ phần còn lại của JavaScript để tránh lỗi cú pháp.                                               |
+
+
+
+
 
   
 
