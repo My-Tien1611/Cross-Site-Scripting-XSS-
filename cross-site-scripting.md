@@ -196,12 +196,66 @@ Bước 2: Nhập ${alert(1)} vào ô tìm kiếm
       + Kết hợp với giá trị ngẫu nhiên để dễ xác định vị trí phản chiếu trong phản hồi.
 - Thử các payload thay thế: Nếu payload bị chặn/sửa đổi → thử các kỹ thuật khác phù hợp với ngữ cảnh và cơ chế lọc.
 - Xác minh trong trình duyệt: Kiểm tra trực tiếp bằng trình duyệt để xem JavaScript có thực thi hay không (thường dùng alert(document.domain)).
-
-
-
-  
-
-
+2. Stored XSS
+- Khái niệm: Stored XSS (còn gọi là XSS bậc hai hoặc XSS dai dẳng) xảy ra khi dữ liệu do người dùng nhập (từ nguồn không đáng tin cậy) được ứng dụng lưu trữ lại (ví dụ trong cơ sở dữ liệu) và hiển thị cho người dùng khác mà không qua kiểm tra/thoát (sanitize/escape) an toàn.
+- Cách thức: 
+      + Kẻ tấn công gửi dữ liệu chứa mã độc (ví dụ: thẻ <script>) vào ứng dụng.
+      + Ứng dụng lưu trữ dữ liệu này (ví dụ: trong bình luận blog).
+      + Khi người dùng khác truy cập trang, dữ liệu độc hại được chèn vào phản hồi HTML.
+      + Trình duyệt nạn nhân thực thi đoạn script đó trong bối cảnh phiên làm việc của họ.
+- Điểm khác biệt chính: Stored XSS nguy hiểm hơn Reflected XSS vì mã độc được lưu trữ lâu dài và tự động ảnh hưởng đến nhiều nạn nhân truy cập ứng dụng.
+2.1 XSS giữa các thẻ HTML
+2.1.1 Stored XSS vào HTML mà không được mã hóa
+Lab chứa lỗ hổng mã hóa chéo trang được lưu trữ trong chức năng bình luận. Để giải quyết bài thực hành này, hãy gửi bình luận gọi alert khi bài đăng trên blog được xem.
+Bước 1: Nhập <script>alert(1)</script> vào bình luận, nhập tên, email và trang web
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/16fd9878-9eea-4297-9e84-b0731b2535dd" />
+Bước 2: Nhấn Quay lại Blog
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/c5524307-e847-4563-86a7-bdcb15f1d6da" />
+Kết quả: 
+Payload <script>alert(1)</script> được nhập trong form bình luận đã không bị mã hóa hay lọc lại, và được lưu vào cơ sở dữ liệu. Khi truy cập lại bài viết, phần bình luận được render thẳng vào HTML dưới dạng: <script>alert(1)</script>
+2.2 XSS trong thuộc tính thẻ HTML
+2.2.1 Stored XSS vào thuộc tính href với dấu ngoặc kép được mã hóa HTML
+Bài Lab này chứa một lỗ hổng mã hóa chéo trang được lưu trữ trong chức năng bình luận. Để giải quyết bài thực hành này, hãy gửi một bình luận có alert khi nhấp vào tên tác giả bình luận.
+2.3 XSS vào JavaScript
+2.3.1 Stored XSS vào onclicksự kiện với dấu ngoặc nhọn và dấu ngoặc kép Mã hóa HTML và dấu ngoặc đơn và dấu gạch chéo ngược được bỏ qua
+Lab này chứa lỗ hổng mã hóa chéo trang được lưu trữ trong chức năng bình luận. Để giải quyết bài tập này, hãy gửi bình luận gọi alert khi nhấp vào tên tác giả bình luận.
+3. DOM-based XSS
+3.1 Khái niệm DOM-based XSS:
+- DOM-Based XSS xảy ra khi JavaScript lấy dữ liệu từ nguồn không tin cậy (ví dụ: URL, window.location) và đưa trực tiếp vào sink (chẳng hạn như innerHTML, eval()), dẫn đến việc thực thi mã độc hại.
+- Kẻ tấn công chỉ cần chèn payload vào URL (query string, fragment, path…) rồi dụ nạn nhân truy cập, khi đó đoạn mã sẽ được thực thi trong trình duyệt của nạn nhân.
+3.2 Cách kiểm tra DOM-based XSS
+- Tự động: Burp Suite có thể nhanh chóng phát hiện phần lớn lỗ hổng DOM XSS.
+- Thủ công: Dùng trình duyệt có công cụ DevTools (Chrome, Firefox...) để phân tích từng nguồn dữ liệu.
+- Kiểm tra HTML sink:
+      + Chèn chuỗi ngẫu nhiên vào nguồn (như location.search).
+      + Tìm chuỗi trong DOM bằng DevTools (không dùng “View Source”).
+      + Xác định ngữ cảnh xuất hiện và thử biến đổi dữ liệu đầu vào (thêm dấu ngoặc, ký tự đặc biệt...) để xem có thoát khỏi ngữ cảnh được không.
+      + Lưu ý: các trình duyệt xử lý mã hóa URL khác nhau (Chrome/Firefox/Safari mã hóa, IE/Edge cũ thì không).
+- Kiểm tra JavaScript sink:
+      + Khó hơn vì dữ liệu không hiện trực tiếp trong DOM.
+      + Dùng DevTools → tìm nguồn (location, document, …) trong mã JS (Ctrl+Shift+F).
+      + Đặt breakpoint, theo dõi dữ liệu đi qua các biến, hàm.
+      + Khi thấy dữ liệu đến một sink, kiểm tra giá trị và thử điều chỉnh input để khai thác XSS.
+- Dùng DOM Invader (Burp Suite): Hỗ trợ tự động phát hiện & khai thác DOM XSS, giảm công sức phải phân tích thủ công mã JavaScript phức tạp.
+3.3 Khai thác DOM XSS với các sources và sinks khác nhau
+3.3.1 DOM XSS trong document.write sử dụng nguồn location.search
+Lab này chứa lỗ hổng mã hóa chéo trang dựa trên DOM trong chức năng theo dõi truy vấn tìm kiếm. Nó sử dụng document.write để ghi dữ liệu ra. Hàm này được gọi với dữ liệu từ location.search, mà bạn có thể kiểm soát bằng cách sử dụng URL của trang web.
+Bước 1: Nhập mytien1234 vào hộp tìm kiếm. Nhấp chuột phải và kiểm tra phần tử, sau đó quan sát thấy mytien1234 được đặt bên trong một img src.
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/f1506ca4-45b2-4b6e-9cc6-7ef028a35c66" />
+Bước 2: Thoát khỏi img bằng cách tìm kiếm: "><svg onload=alert(1)>
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/ffab3297-d7b5-4259-a4df-077e74127554" />
+- Hàm document.write(location.search) ghi trực tiếp giá trị từ URL lên trang.
+- Không có escaping/encoding/validation.
+3.3.2 DOM XSS trong document.write sử dụng source location.search bên trong phần tử select
+Bài thực hành này có một lỗ hổng DOM-based XSS trong chức năng kiểm tra kho hàng. Ứng dụng sử dụng hàm JavaScript document.write để hiển thị dữ liệu ra trang. Hàm này nhận dữ liệu trực tiếp từ location.search, tức là người dùng có thể thay đổi nội dung thông qua tham số trên URL. Phần dữ liệu này sau đó được đưa vào trong thẻ select.
+ Bước 1: Trên các trang sản phẩm, JavaScript  trích xuất một storeId từ location.search. 
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/ff21ca84-cc15-4365-b794-a33a94cdc1d0" />
+Sau đó, nó được sử dụng document.write để tạo một tùy chọn mới trong phần tử select cho chức năng kiểm tra kho.chuỗi abcd1234 được liệt kê là một trong các tùy chọn trong danh sách thả xuống.
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/44365c90-f37d-4cce-8f9f-b314541f0579" />
+Bước 2:Thay đổi URL để bao gồm tải trọng XSS phù hợp bên trong storeIdtham số như sau:
+  product?productId=1&storeId="></select><img%20src=1%20onerror=alert(1)>
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/9a6cbe0e-ad52-4b93-8586-6f509653f40c" />
+Vì dữ liệu từ storeId được chèn trực tiếp vào HTML bằng document.write(), nên nếu kẻ tấn công cung cấp một giá trị độc hại trong tham số storeId, trình duyệt sẽ phân tích và hiển thị nó như mã HTML hoặc JavaScript hợp lệ.
 
 
 
