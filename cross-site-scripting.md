@@ -178,6 +178,12 @@ Kết quả:
 | `toString=x`                         | Ghi đè `.toString()`. Nếu biến nào bị ép thành chuỗi (qua `+` chẳng hạn), nó sẽ kích hoạt hàm `x()` → và từ đó `throw onerror=alert`. |
 | `window+''`                          | Ép `window` thành chuỗi → kích hoạt `.toString()` → gọi `x()` → chạy `alert(1337)`.                        |
 | `{x:'`                               | Làm hợp lệ phần còn lại của JavaScript để tránh lỗi cú pháp.                                               |
+1.3.5 Reflected XSS vào mẫu theo angle brackets, dấu ngoặc nhọn, dấu ngoặc đơn, dấu ngoặc kép, dấu gạch chéo ngược và dấu ngoặc kép Unicode thoát
+Lỗ hổng này xảy ra bên trong một chuỗi mẫu với dấu ngoặc nhọn, dấu ngoặc đơn và dấu ngoặc kép được mã hóa HTML, và dấu ngoặc kép ngược được thoát. Để giải quyết bài thực hành này, hãy thực hiện một cuộc tấn công mã hóa chéo trang web bằng cách gọi alert bên trong chuỗi mẫu.
+Bước 1: Nhập mytien1234 vào ô tìm kiếm sau đó sử dụng Burp Suite để chặn yêu cầu tìm kiếm và gửi đến Burp Repeater. Lưu ý rằng chuỗi ngẫu nhiên đã được phản ánh bên trong chuỗi mẫu JavaScript
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/c6684120-29b7-4b3a-b093-4444e5d11cd8" />
+Bước 2: Nhập ${alert(1)} vào ô tìm kiếm
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/395f0733-7811-4750-bc8a-d4eaafda0072" />
 
 
 
