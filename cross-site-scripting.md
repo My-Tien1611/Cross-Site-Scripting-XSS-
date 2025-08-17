@@ -37,6 +37,7 @@ Sau đây là một ví dụ đơn giản về lỗ hổng XSS phản ánh:https
 https://insecure-website.com/status?message=<script>/*+Bad+stuff+here...+*/</script>
 <p>Status: <script>/* Bad stuff here... */</script></p>
 Nếu người dùng truy cập URL do kẻ tấn công tạo ra, tập lệnh của kẻ tấn công sẽ được thực thi trên trình duyệt của người dùng, trong bối cảnh phiên làm việc của người dùng với ứng dụng. Tại thời điểm đó, tập lệnh có thể thực hiện bất kỳ hành động nào và truy xuất bất kỳ dữ liệu nào mà người dùng có quyền truy cập.
+Có nhiều loại tấn công Reflected XSS khác nhau. Vị trí của Reflected XSS trong phản hồi của ứng dụng quyết định loại dữ liệu cần thiết để khai thác nó và cũng có thể ảnh hưởng đến tác động của lỗ hổng.
 1.1	XSS giữa các thẻ HTML
 1.1.1 Reflected XSS vào HTML mà không được mã hóa:
 -	Reflected XSS xảy ra khi dữ liệu người dùng nhập vào (trong URL, form, v.v.) được phản hồi lại trang HTML mà không qua bước mã hóa hoặc lọc.
@@ -184,8 +185,17 @@ Bước 1: Nhập mytien1234 vào ô tìm kiếm sau đó sử dụng Burp Suite
 <img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/c6684120-29b7-4b3a-b093-4444e5d11cd8" />
 Bước 2: Nhập ${alert(1)} vào ô tìm kiếm
 <img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/395f0733-7811-4750-bc8a-d4eaafda0072" />
-
-
+1.4 Cách tìm và kiểm tra lỗ hổng Reflected XSS: 
+- Xem xét tất cả dữ liệu đầu vào: tham số URL, nội dung yêu cầu, đường dẫn, tiêu đề HTTP...
+- Gửi giá trị ngẫu nhiên: 
+      + Gửi một chuỗi số ngẫu nhiên (~8 ký tự) để kiểm tra xem dữ liệu có được phản chiếu trong phản hồi không.
+      + Dùng Burp Intruder để tự động tạo và đánh dấu phản hồi chứa giá trị đã gửi.
+- Xác định ngữ cảnh phản chiếu: Xem giá trị được phản chiếu trong HTML, thuộc tính thẻ, JavaScript… để biết cách chèn payload.
+- Kiểm tra tải trọng payload
+      + Dựa vào ngữ cảnh, chèn payload XSS thử nghiệm (qua Burp Repeater).
+      + Kết hợp với giá trị ngẫu nhiên để dễ xác định vị trí phản chiếu trong phản hồi.
+- Thử các payload thay thế: Nếu payload bị chặn/sửa đổi → thử các kỹ thuật khác phù hợp với ngữ cảnh và cơ chế lọc.
+- Xác minh trong trình duyệt: Kiểm tra trực tiếp bằng trình duyệt để xem JavaScript có thực thi hay không (thường dùng alert(document.domain)).
 
 
 
