@@ -1,4 +1,4 @@
-Tìm hiểu Cross-site scripting (XSS)
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/40b2c69c-f406-47ab-abac-bbfa95d0e67e" />Tìm hiểu Cross-site scripting (XSS)
 A.	LÝ THUYẾT
 1.	Khái niệm và mục đích:
 -	Khái niệm: Cross-site scripting (XSS) là lỗ hổng bảo mật web cho phép kẻ tấn công chèn và thực thi mã độc (thường là JavaScript) vào trình duyệt của người dùng thông qua một ứng dụng web dễ bị tấn công.
@@ -54,7 +54,65 @@ Một popup alert(1) xuất hiện → chứng minh XSS thành công.
 <img width="975" height="548" alt="image" src="https://github.com/user-attachments/assets/8cb3f2bd-db42-460d-a73c-87b614cb8bac" />
 <img width="975" height="548" alt="image" src="https://github.com/user-attachments/assets/c5502edc-e145-49b8-832d-43d1fc9ce766" />
 1.1.2 Reflected XSS vào HTML với hầu hết các thẻ và thuộc tính bị chặn
-  
+- Lab này chứa lỗ hổng XSS phản ánh trong chức năng tìm kiếm nhưng sử dụng tường lửa ứng dụng web (WAF) để bảo vệ chống lại các vectơ XSS phổ biến.
+- Để giải quyết bài toán này, hãy thực hiện một cuộc tấn công  bỏ qua WAF và gọi print().
+  Bước 1: Thử chèn XSS bằng thẻ <img> với thuộc tính onerror để thực thi JavaScript.
+  <img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/a5dfbe16-5ec5-4a4c-b11b-047256ba284c" />
+  Server chặn thẻ/thuộc tính nguy hiểm và trả về "Tag is not allowed", nên payload không chạy được
+  <img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/e4650a5a-3bb7-4365-836b-a27f74ffaf75" />
+  Bước 2: Mở trình duyệt của Burp và sử dụng chức năng tìm kiếm trong phòng thí nghiệm. Gửi yêu cầu kết quả đến Burp Intruder.Thay thế giá trị của từ khóa tìm kiếm bằng:<§§>
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/2412ec63-086b-4b9f-b604-cfc07a806dd8" />
+Bước 3: Truy cập bảng hướng dẫn XSS và nhấp vào Sao chép thẻ vào bảng tạm .
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/bba03bd0-23bd-41d0-b1a1-7f5a774d0efc" />
+Nhấp vào Bắt đầu tấn công
+  <img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/b9fe4730-5800-429b-b71c-09596fc020ae" />
+Đây là kết quả chạy Burp Intruder để fuzz các thẻ HTML xem thẻ nào được phép trên trang 
+      + 400 kèm độ dài 113 → thẻ bị filter, server từ chối (“Tag is not allowed”).
+      + 200 với độ dài lớn hơn (3476, 3480, 3487) → thẻ được phép và phản chiếu lại.
+Bước 4: Quay lại Burp Intruder. Giá trị của thuật ngữ tìm kiếm bây giờ sẽ trông như sau:<body%20§§=1>
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/01d2b1fe-3589-4266-8530-99803d9d80ab" />
+Bước 5:  Truy cập bảng hướng dẫn XSS và nhấp vào Sao chép sự kiện vào bảng tạm . Nhấn bắt đầu tấn công
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/d918a79b-f627-4c42-8a34-be9ea819de9b" />
+Đây là kết quả fuzz các sự kiện (event handler) trong Burp Intruder để xem sự kiện nào không bị filter
+Bước 6: Truy cập máy chủ khai thác và dán đoạn mã sau: <iframe src="https://YOUR-LAB-ID.web-security-academy.net/?search=%22%3E%3Cbody%20onresize=print()%3E" onload=this.style.width='100px'>
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/530367f1-55ee-4375-bed4-db42fb451f08" />
+Bước 7: Nhấp vào Lưu trữ và Gửi mã độc đến nạn nhân 
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/56592649-0d9d-4534-94ce-611c0689bd0d" />
+Kết quả: bypass filter bằng cách lợi dụng thẻ <body> (không bị chặn) và sự kiện onresize (cho phép), nhúng vào exploit server → khiến victim tự động kích hoạt payload → lab được solve.
+1.1.3 Reflected XSS vào HTML với tất cả các thẻ bị chặn ngoại trừ các thẻ tùy chỉnh
+Lab này chặn tất cả các thẻ HTML ngoại trừ các thẻ tùy chỉnh. Bằng cách thực hiện một cuộc tấn công chèn một thẻ tùy chỉnh và tự động cảnh báo document.cookie.
+Bước 1: Truy cập máy chủ khai thác và dán đoạn mã sau: 
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/24ebba63-ee2f-4a6d-99fb-f2b61c1c7cc3" />
+Việc tiêm này tạo một thẻ tùy chỉnh với ID x, chứa trình xử lý sự kiện onfocus kích hoạt alert. Hash ở cuối URL sẽ tập trung vào phần tử này ngay khi trang được tải, khiến payload được gọi.
+Bước 2: Nhấp vào "Lưu trữ" và "Gửi mã khai thác cho nạn nhân".
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/675f295c-9c06-4af8-961c-958e68b1a58c" />
+1.1.4 Reflected XSS với trình xử lý sự kiện và thuộc tính href bị chặn
+Lab này chứa lỗ hổng XSS phản ánh với một số thẻ được phép, nhưng tất cả các sự kiện và href đều bị chặn. Thực hiện một cuộc tấn công bằng cách chèn một vectơ, khi được nhấp vào, sẽ gọi alert đó.
+Lưu ý cần gắn nhãn vector của mình bằng từ "Click" để khuyến khích người dùng nhấp vào vector của bạn
+Bước 1: Truy cập URL sao: 
+https://0a1400ca04d85c84801ea8ed00ff0023.web-security-academy.net/?search=%3Csvg%3E%3Ca%3E%3Canimate+attributeName%3Dhref+values%3Djavascript%3Aalert(1)+%2F%3E%3Ctext+x%3D20+y%3D20%3EClick%20me%3C%2Ftext%3E%3C%2Fa%3E
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/58a3a92e-67cb-42a7-ab34-7dd00092fdc4" />
+Giải thích:
+- Vì không thể gán trực tiếp href="javascript:...", ta dùng cơ chế SMIL animation trong SVG để thay đổi động thuộc tính href sau khi DOM load.
+      + Dùng <animate attributeName=href values=javascript:alert(1) /> bên trong thẻ <a>.
+      + Điều này khiến thuộc tính href của <a> được tự động gán thành javascript:alert(1).
+- Sau đó, ta thêm <text> để hiển thị chữ “Click me” nhằm khuyến khích người dùng click.
+Kết quả: 
+- Khi trang phản xạ lại input này, SVG được parse.
+- Animation gán href động cho <a>.
+- Người dùng click vào dòng chữ “Click me” → javascript:alert(1) chạy → XSS thành công.
+1.1.5 Reflected XSS với một số đánh dấu SVG được cho phép
+Trang web đang chặn các thẻ phổ biến nhưng lại bỏ sót một số thẻ và sự kiện SVG.
+Bước 1,2,3 làm giống mục 1.1.2 
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/6c74e242-f288-4d0a-a1ff-8d5af8cd187e" />
+Khi cuộc tấn công kết thúc. Quan sát thấy tất cả các payload đều tạo ra phản hồi 400 , ngoại trừ những payload sử dụng thẻ <svg>, <animatetransform>, <title>, và <image>đã nhận được phản hồi 200.
+Bước 4: Quay lại tab Intruder, thêm thuật ngữ tìm kiếm: <svg><animatetransform%20§§=1>. Truy cập bảng hướng dẫn XSS và nhấp vào Sao chép sự kiện vào bảng tạm .
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/1230e39d-9c42-4252-84f0-7b934444ccc5" />
+Bước 5: Nhấp vào bắt đầu tấn công
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/ce9d93c1-3322-4de9-8e05-f350d838e633" />
+Khi cuộc tấn công kết thúc tất cả các tải trọng đều gây ra phản hồi 400, ngoại trừ onbegin tải trọng gây ra phản hồi 200.
+Bước 6: Nhập <svg><animateTransform onbegin=alert(1)'> vào ô Search
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/05f745a4-e976-48b5-8579-39e2a4d2f690" />
 1.2	XSS trong thuộc tính thẻ HTML
 1.2.1 Reflected XSS vào thuộc tính có dấu ngoặc nhọn được mã hóa HTML:
 -	Đây là dạng Reflected XSS nhưng dữ liệu đầu vào được đưa vào giá trị của một thuộc tính HTML (ví dụ: value="", title="", onmouseover=""…).
@@ -67,6 +125,17 @@ Một popup alert(1) xuất hiện → chứng minh XSS thành công.
 <img width="802" height="451" alt="image" src="https://github.com/user-attachments/assets/673e4e6b-8482-4ab9-87e2-6a930d8caabd" />
 Trình duyệt hiểu đây là một thẻ <input> có thuộc tính sự kiện onmouseover gán với alert(1). Khi người dùng di chuột vào, JavaScript alert(1)  chạy → popup xuất hiện.
 <img width="813" height="457" alt="image" src="https://github.com/user-attachments/assets/2d3bde8b-8b91-426a-b0ea-5cfa0c8cc89f" />
+1.2.2 Reflected XSS trong thẻ liên kết chuẩn
+Lab này phản ánh thông tin đầu vào của người dùng trong thẻ liên kết chuẩn và thoát khỏi dấu ngoặc nhọn. Thực hiện một cuộc tấn công mã lệnh chéo trang trên trang chủ để chèn một thuộc tính gọi alert.
+Giả định rằng người dùng được mô phỏng sẽ nhấn các tổ hợp phím sau:
+      + ALT+SHIFT+X
+      + CTRL+ALT+X
+      + Alt+X
+Bước 1: Truy cập URL sau: https://0a0b0017037ae73d813e67ba00e900ce.web-security-academy.net/?%27accesskey=%27x%27onclick=%27alert(1) -> Nhấn: ALT+SHIFT+X
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/1793e735-a3a3-42ee-8f27-df526cfcc622" />
+- Thao tác này sẽ đặt X làm khóa truy cập cho toàn bộ trang. Khi người dùng nhấn phím truy cập, alert sẽ được gọi.
+- Do input được phản ánh vào một thẻ HTML hợp lệ và escape dấu < >, ta chỉ có thể tiêm thuộc tính thay vì mở thẻ mới.
+- Payload tận dụng accesskey + onclick để ép trình duyệt chạy JavaScript khi nạn nhân nhấn tổ hợp phím.
 1.3 XSS vào JavaScript: 
 1.3.2 Reflected XSS vào chuỗi JavaScript có dấu ngoặc nhọn được mã hóa HTML
 - Bối cảnh (Context): Payload người dùng nhập vào được chèn vào bên trong chuỗi JavaScript (string) trong HTML.
