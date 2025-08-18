@@ -4,7 +4,7 @@
 
 ### 1. Khái niệm và mục đích
 
-- **Khái niệm**:  
+- **Khái niệm**:   
   Cross-site scripting (XSS) là lỗ hổng bảo mật web cho phép kẻ tấn công chèn và thực thi mã độc (thường là **JavaScript**) vào trình duyệt của người dùng thông qua một ứng dụng web dễ bị tấn công.
 
 - **Mục đích**: Khai thác XSS nhằm:
