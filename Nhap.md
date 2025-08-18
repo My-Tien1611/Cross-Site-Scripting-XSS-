@@ -32,7 +32,8 @@ Tác động thực tế của một cuộc tấn công XSS thường phụ thu�
 B.	THỰC HÀNH
 1.	Reflected XSS:
 Reflected XSS là dạng tấn công cross-site scripting đơn giản nhất. Nó phát sinh khi một ứng dụng nhận dữ liệu trong một yêu cầu HTTP và đưa dữ liệu đó vào phản hồi tức thời theo cách không an toàn.
-Sau đây là một ví dụ đơn giản về lỗ hổng XSS phản ánh:https://insecure-website.com/status?message=All+is+well.<p>Status: All is well.</p>
+Sau đây là một ví dụ đơn giản về lỗ hổng XSS phản ánh:
+https://insecure-website.com/status?message=All+is+well.<p>Status: All is well.</p>
 Ứng dụng không thực hiện bất kỳ xử lý dữ liệu nào khác, do đó kẻ tấn công có thể dễ dàng thực hiện một cuộc tấn công như thế này:
 https://insecure-website.com/status?message=<script>/*+Bad+stuff+here...+*/</script>
 <p>Status: <script>/* Bad stuff here... */</script></p>
