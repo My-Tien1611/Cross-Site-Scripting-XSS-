@@ -1,4 +1,63 @@
 # Tìm hiểu Cross-site scripting (XSS)
+- Thực hiện: Lê Thị Mỹ Tiên
+- Cập nhật lần cuối: 19/8/2025
+## Mục lục
+- [A. LÝ THUYẾT](#a-lý-thuyết)
+  - [1. Khái niệm và mục đích](#1-khái-niệm-và-mục-đích)
+  - [2. Phân loại XSS](#2-phân-loại-xss)
+  - [3. Cơ chế hoạt động](#3-cơ-chế-hoạt-động)
+  - [4. Hậu quả](#4-hậu-quả)
+  - [5. Cách tìm và kiểm tra lỗ hổng XSS](#5-cách-tìm-và-kiểm-tra-lỗ-hổng-xss)
+
+- [B. THỰC HÀNH](#bthực-hành)
+  - [1.1 XSS giữa các thẻ HTML](#11-xss-giữa-các-thẻ-html)
+    - [1.1.1 Reflected XSS vào HTML mà không được mã hóa](#111-reflected-xss-vào-html-mà-không-được-mã-hóa)
+    - [1.1.2 Reflected XSS vào HTML với hầu hết các thẻ và thuộc tính bị chặn](#112-reflected-xss-vào-html-với-hầu-hết-các-thẻ-và-thuộc-tính-bị-chặn)
+    - [1.1.3 Reflected XSS vào HTML với tất cả các thẻ bị chặn ngoại trừ các thẻ tùy chỉnh](#113-reflected-xss-vào-html-với-tất-cả-các-thẻ-bị-chặn-ngoại-trừ-các-thẻ-tùy-chỉnh)
+    - [1.1.4 Reflected XSS với trình xử lý sự kiện và thuộc tính href bị chặn](#114-reflected-xss-với-trình-xử-lý-sự-kiện-và-thuộc-tính-href-bị-chặn)
+    - [1.1.5 Reflected XSS với một số đánh dấu SVG được cho phép](#115-reflected-xss-với-một-số-đánh-dấu-svg-được-cho-phép)
+  - [1.2 XSS trong thuộc tính thẻ HTML](#12-xss-trong-thuộc-tính-thẻ-html)
+    - [1.2.1 Reflected XSS vào thuộc tính có dấu ngoặc nhọn được mã hóa HTML](#121-reflected-xss-vào-thuộc-tính-có-dấu-ngoặc-nhọn-được-mã-hóa-html)
+    - [1.2.2 Reflected XSS trong thẻ liên kết chuẩn](#122-reflected-xss-trong-thẻ-liên-kết-chuẩn)
+  - [1.3 XSS vào JavaScript](#13-xss-vào-javascript)
+    - [1.3.1 Reflected XSS vào chuỗi JavaScript với dấu nháy đơn và dấu gạch chéo ngược được thoát](#131-reflected-xss-vào-chuỗi-javascript-với-dấu-nháy-đơn-và-dấu-gạch-chéo-ngược-được-thoát)
+    - [1.3.2 Reflected XSS vào chuỗi JavaScript có dấu ngoặc nhọn được mã hóa HTML](#132-reflected-xss-vào-chuỗi-javascript-có-dấu-ngoặc-nhọn-được-mã-hóa-html)
+    - [1.3.3 Reflected XSS vào chuỗi JavaScript với dấu ngoặc nhọn và dấu ngoặc kép mã hóa HTML và thoát dấu ngoặc đơn](#133-reflected-xss-vào-chuỗi-javascript-với-dấu-ngoặc-nhọn-và-dấu-ngoặc-kép-mã-hóa-html-và-thoát-dấu-ngoặc-đơn)
+    - [1.3.4 Reflected XSS trong URL](#134-reflected-xss-trong-url)
+    - [1.3.5 Reflected XSS vào mẫu theo angle brackets dấu ngoặc nhọn dấu ngoặc đơn dấu ngoặc kép dấu gạch chéo ngược và dấu ngoặc kép unicode thoát](#135-reflected-xss-vào-mẫu-theo-angle-brackets-dấu-ngoặc-nhọn-dấu-ngoặc-đơn-dấu-ngoặc-kép-dấu-gạch-chéo-ngược-và-dấu-ngoặc-kép-unicode-thoát)
+  - [1.4 Cách tìm và kiểm tra lỗ hổng Reflected XSS](#14-cách-tìm-và-kiểm-tra-lỗ-hổng-reflected-xss)
+
+- [2. Stored XSS](#2-stored-xss)
+  - [2.1 XSS giữa các thẻ HTML](#21-xss-giữa-các-thẻ-html)
+    - [2.1.1 Stored XSS vào HTML mà không được mã hóa](#211-stored-xss-vào-html-mà-không-được-mã-hóa)
+  - [2.2 XSS trong thuộc tính thẻ HTML](#22-xss-trong-thuộc-tính-thẻ-html)
+    - [2.2.1 Stored XSS vào thuộc tính href với dấu ngoặc kép được mã hóa HTML](#221-stored-xss-vào-thuộc-tính-href-với-dấu-ngoặc-kép-được-mã-hóa-html)
+  - [2.3 XSS vào JavaScript](#23-xss-vào-javascript)
+    - [2.3.1 Stored XSS vào onclicksự kiện với dấu ngoặc nhọn và dấu ngoặc kép mã hóa HTML và dấu ngoặc đơn và dấu gạch chéo ngược được bỏ qua](#231-stored-xss-vào-onclicksự-kiện-với-dấu-ngoặc-nhọn-và-dấu-ngoặc-kép-mã-hóa-html-và-dấu-ngoặc-đơn-và-dấu-gạch-chéo-ngược-được-bỏ-qua)
+
+- [3. DOM-based XSS](#3-dom-based-xss)
+  - [3.1 Khái niệm DOM-based XSS](#31-khái-niệm-dom-based-xss)
+  - [3.2 Cách kiểm tra DOM-based XSS](#32-cách-kiểm-tra-dom-based-xss)
+  - [3.3 Khai thác DOM XSS với các sources và sinks khác nhau](#33-khai-thác-dom-xss-với-các-sources-và-sinks-khác-nhau)
+    - [3.3.1 DOM XSS trong documentwrite sử dụng nguồn locationsearch](#331-dom-xss-trong-documentwrite-sử-dụng-nguồn-locationsearch)
+    - [3.3.2 DOM XSS trong documentwrite sử dụng source locationsearch bên trong phần tử select](#332-dom-xss-trong-documentwrite-sử-dụng-source-locationsearch-bên-trong-phần-tử-select)
+    - [3.3.3 DOM XSS trong innerhtml sử dụng nguồn locationsearch](#333-dom-xss-trong-innerhtml-sử-dụng-nguồn-locationsearch)
+    - [3.3.4 DOM XSS trong jquery với điểm đích là thuộc tính href sử dụng dữ liệu từ locationsearch](#334-dom-xss-trong-jquery-với-điểm-đích-là-thuộc-tính-href-sử-dụng-dữ-liệu-từ-locationsearch)
+    - [3.3.5 DOM XSS trong jquery với điểm đích là hàm chọn phần tử selector khai thác thông qua hashchange](#335-dom-xss-trong-jquery-với-điểm-đích-là-hàm-chọn-phần-tử-selector-khai-thác-thông-qua-hashchange)
+    - [3.3.6 DOM XSS trong biểu thức angularjs với dấu ngoặc nhọn và dấu ngoặc kép đã được mã hóa html](#336-dom-xss-trong-biểu-thức-angularjs-với-dấu-ngoặc-nhọn-và-dấu-ngoặc-kép-đã-được-mã-hóa-html)
+    - [3.3.7 Reflected DOM XSS](#337-reflected-dom-xss)
+    - [3.3.8 Stored DOM XSS](#338-stored-dom-xss)
+    - [3.3.9 Những sink dẫn đến DOM XSS](#339-những-sink-dẫn-đến-dom-xss)
+    - [3.3.10 Cách ngăn chặn DOM XSS](#3310-cách-ngăn-chặn-dom-xss)
+
+- [4. Khai thác lỗ hổng cross-site scripting](#4-khai-thác-lỗ-hổng-cross-site-scripting)
+  - [4.1 Khai thác tấn công cross-site scripting để đánh cắp cookie](#41-khai-thác-tấn-công-cross-site-scripting-để-đánh-cắp-cookie)
+  - [4.2 Khai thác tấn công cross-site scripting để lấy mật khẩu](#42-khai-thác-tấn-công-cross-site-scripting-để-lấy-mật-khẩu)
+  - [4.3 Khai thác tấn công cross-site scripting để vượt qua các biện pháp bảo vệ CSRF](#43-khai-thác-tấn-công-cross-site-scripting-để-vượt-qua-các-biện-pháp-bảo-vệ-csrf)
+
+- [5. Chính sách bảo mật nội dung](#5-chính-sách-bảo-mật-nội-dung)
+- [6 Phòng chống XSS](#6-phòng-chống-xss)
+
 
 ## A. LÝ THUYẾT
 
