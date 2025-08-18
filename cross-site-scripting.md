@@ -311,6 +311,17 @@ Bài Lab này chứa một lỗ hổng mã hóa chéo trang được lưu trữ 
 ###### 2.3.1 Stored XSS vào onclicksự kiện với dấu ngoặc nhọn và dấu ngoặc kép Mã hóa HTML và dấu ngoặc đơn và dấu gạch chéo ngược được bỏ qua
 Lab này chứa lỗ hổng mã hóa chéo trang được lưu trữ trong chức năng bình luận. Để giải quyết bài tập này, hãy gửi bình luận gọi alert khi nhấp vào tên tác giả bình luận.
 
+Bước 1: Đăng bình luận vào trang web và gửi đến Burp Repeater
+
+Bước 2: Chuỗi bình luận được đặt trong `onClick`
+<img width="1917" height="801" alt="image" src="https://github.com/user-attachments/assets/3dcc4c92-733f-4fa6-9883-61bfbf93c165" />
+Bước 3: Chèn URL vào trang web : `http://foo?&apos;-alert(1)-&apos;`
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/8e26282e-7ddb-4477-8336-5deffcc92b02" />
+<img width="1918" height="833" alt="image" src="https://github.com/user-attachments/assets/d4460ea3-ce0a-40b6-b42c-b87e49f33e99" />
+Payload hoạt động dựa trên việc chèn dấu nháy đơn (dưới dạng &apos;) để thoát ra khỏi chuỗi đang nằm trong thuộc tính onclick. Khi đã thoát ra ngoài, ta có thể đưa vào một đoạn mã JavaScript, ví dụ như alert(1). Sau đó, payload lại thêm một dấu nháy đơn nữa để đóng chuỗi và giúp phần còn lại của mã không bị lỗi cú pháp.
+
+Nói cách khác, payload này cắt ngang chuỗi ban đầu, chèn mã độc vào giữa, rồi nối chuỗi lại như chưa hề bị phá vỡ. Nhờ đó, khi người dùng nhấp chuột vào link, đoạn JavaScript (alert(1)) sẽ được thực thi.
+
 --- 
 ### 3. DOM-based XSS
 #### 3.1 Khái niệm DOM-based XSS:
